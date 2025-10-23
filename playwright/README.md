@@ -1,7 +1,7 @@
-# Playwright Demo – Product Dashboard
+# Playwright Demo – Orders Dashboard
 
 Demo kiểm thử giao diện bằng Playwright.
-Ứng dụng mẫu: Product Dashboard (login → xem KPI → lọc → thêm vào giỏ).
+Ứng dụng mẫu: Orders Dashboard (login → xem KPI → lọc → thêm vào giỏ).
 
 ---
 
@@ -10,6 +10,7 @@ Demo kiểm thử giao diện bằng Playwright.
 ```bash
 npm init -y
 npm i -D @playwright/test http-server
+npx playwright install
 ```
 
 ---
@@ -17,22 +18,23 @@ npm i -D @playwright/test http-server
 ## 2. Cấu trúc thư mục
 
 ```
-playwright-demo/
+playwright/
 │
 ├── index.html                # Web demo (Tailwind + JS)
-├── products.json             # Dữ liệu sản phẩm mẫu
+├── orders.json               # Dữ liệu đơn hàng mẫu
 │
 ├── playwright.config.js      # Cấu hình Playwright
 ├── package.json
 │
 └── tests/
-    ├── login.spec.js
-    └── dashboard.products.spec.js
+  ├── login.spec.js
+  └── orders.dashboard.spec.js
 ```
 
 ---
 
-## 3. Phần scripts trong package.json
+
+## 3. Scripts trong package.json
 
 ```json
 "scripts": {
@@ -48,45 +50,53 @@ Lệnh `npm run test:ui` chạy với giao diện tương tác.
 
 ---
 
+
 ## 4. Chạy thử
 
 ```bash
-npm start      # chạy web demo ở http://localhost:5173
-npm test       # chạy test headless
+npm start         # chạy web demo ở http://localhost:5173
+npm test          # chạy test headless
+npm run test:ui   # chạy test với giao diện
 ```
 
-Playwright tự động tải trình duyệt cần thiết khi chạy lần đầu.
+Nếu chưa cài browser, chạy thêm:
+```bash
+npx playwright install
+```
 
 ---
+
 
 ## 5. Mô tả ứng dụng mẫu
 
-| Chức năng | Mô tả |
-|------------|-------|
-| Đăng nhập | dev@example.com / secret |
-| Dashboard KPI | Hiển thị tổng sản phẩm, doanh số, trạng thái |
-| Lọc sản phẩm | Tìm kiếm theo tên hoặc loại |
-| Giỏ hàng | Thêm sản phẩm vào giỏ |
+| Chức năng      | Mô tả                                    |
+|----------------|------------------------------------------|
+| Đăng nhập      | dev@example.com / secret                 |
+| Dashboard KPI  | Hiển thị tổng đơn, doanh số, trạng thái  |
+| Lọc đơn hàng   | Tìm kiếm theo tên khách hoặc trạng thái  |
+| Giỏ hàng       | Thêm đơn vào giỏ (Fulfill)               |
 
 ---
 
+
 ## 6. Gây lỗi thử (test fail)
 
-Trong `dashboard.products.spec.js`, sửa một dòng như sau:
+Trong `orders.dashboard.spec.js`, sửa một dòng như sau:
 
 ```js
-await expect(page.getByText('Total Products: 10')).toBeVisible();
+await expect(page.locator('#kpiOrders')).toHaveText('5');
 ```
 
 thành
 
 ```js
-await expect(page.getByText('Total Products: 99')).toBeVisible();
+await expect(page.locator('#kpiOrders')).toHaveText('99');
 ```
 
 Sau đó chạy `npm test` để xem kết quả lỗi.
 
 ---
+
 
 ## 7. Báo cáo test
 
@@ -99,6 +109,7 @@ npm run report
 Báo cáo mở tại địa chỉ: http://localhost:9323
 
 ---
+
 
 ## 8. Ghi chú thêm
 

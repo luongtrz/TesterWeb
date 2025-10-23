@@ -5,11 +5,17 @@ Demo kiểm thử giao diện bằng Cypress.
 
 ---
 
+
 ## 1. Cài đặt môi trường
 
+**Yêu cầu:**
+- Đã cài đặt [Node.js và npm](https://nodejs.org/) trên máy.
+- Đã cài đặt trình duyệt Chrome (để chạy test headless).
+
+**Cài đặt dependencies:**
 ```bash
 npm init -y
-npm i -D cypress http-server
+npm install --save-dev cypress http-server
 ```
 
 ---
@@ -33,8 +39,10 @@ cypress-demo/
 
 ---
 
-## 3. Phần scripts trong package.json
 
+## 3. Scripts trong package.json
+
+Thêm vào phần `scripts`:
 ```json
 "scripts": {
   "start": "http-server -p 5174 .",
@@ -43,17 +51,23 @@ cypress-demo/
 }
 ```
 
-Lệnh `npm run cy:open` mở giao diện Cypress Test Runner.  
-Lệnh `npm run cy:run` chạy toàn bộ test headless trong Chrome.
+- `npm run cy:open`: Mở giao diện Cypress Test Runner.
+- `npm run cy:run`: Chạy toàn bộ test headless trong Chrome.
 
 ---
+
 
 ## 4. Chạy thử
 
 ```bash
-npm start       # khởi động web demo ở http://localhost:5174
-npm run cy:open # mở giao diện test
-npm run cy:run  # chạy test headless
+# Khởi động web demo
+npm start       # Truy cập http://localhost:5174
+
+# Mở giao diện test
+npm run cy:open
+
+# Chạy test headless
+npm run cy:run
 ```
 
 ---
@@ -87,10 +101,14 @@ Sau đó chạy `npm run cy:run` để xem test fail.
 
 ---
 
+
 ## 7. Báo cáo test
 
-Sau khi chạy `cy:run`, Cypress tự động lưu kết quả tại thư mục `cypress/reports` (nếu được cấu hình thêm plugin reporter).  
-Bạn cũng có thể thêm `--reporter html` để tạo file báo cáo HTML.
+Sau khi chạy `cy:run`, Cypress sẽ lưu kết quả tại thư mục `cypress/reports` (nếu cấu hình thêm plugin reporter).
+Bạn có thể thêm tuỳ chọn `--reporter html` để tạo báo cáo HTML:
+```bash
+npm run cy:run -- --reporter html
+```
 
 ---
 
