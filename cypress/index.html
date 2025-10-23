@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard Products</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900 p-6">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">Mini App</h1>
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-gray-600 hidden" id="whoami"></span>
+      <button id="btnLogout" class="hidden rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- LOGIN SCREEN -->
+  <section id="loginSection" class="max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h2 class="text-xl font-semibold mb-3">Đăng nhập</h2>
+    <form id="loginForm" class="grid gap-3">
+      <label class="grid gap-1">
+        <span class="text-sm text-gray-600">Email</span>
+        <input data-testid="email" id="email" name="email" type="email"
+               class="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" required />
+      </label>
+      <label class="grid gap-1">
+        <span class="text-sm text-gray-600">Mật khẩu</span>
+        <input data-testid="password" id="password" name="password" type="password"
+               class="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" required />
+      </label>
+      <button data-testid="submit" class="rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Đăng nhập
+      </button>
+      <p id="loginMsg" class="text-sm text-red-600"></p>
+
+      <!-- gợi ý tài khoản demo -->
+      <div class="text-xs text-gray-500">
+        Demo: <code>dev@example.com</code> / <code>secret</code>
+      </div>
+    </form>
+  </section>
+
+  <!-- DASHBOARD SCREEN -->
+  <section id="appSection" class="hidden">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-xl font-semibold">Dashboard</h2>
+      <div class="text-lg">🛒 Cart: <span id="cartCount" class="font-bold">0</span></div>
+    </div>
+
+    <!-- KPIs -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-4">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Tổng số sản phẩm</h4>
+        <div id="kpiProducts" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Tổng số tồn kho</h4>
+        <div id="kpiStock" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Giá trị tồn (₫)</h4>
+        <div id="kpiValue" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Top ngành hàng</h4>
+        <div id="kpiTopCat" class="text-2xl font-semibold">—</div>
+      </div>
+    </section>
+
+    <!-- Toolbar -->
+    <div class="flex items-center gap-2 mb-3">
+      <input id="q" type="search" placeholder="Tìm tên sản phẩm... (vd: desk)"
+             class="w-64 rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
+      <button id="clear" class="rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Xóa lọc
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <table class="min-w-full">
+        <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+          <tr>
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">Tên</th>
+            <th class="px-4 py-3">Ngành</th>
+            <th class="px-4 py-3">Giá</th>
+            <th class="px-4 py-3">Tồn</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody id="rows" class="divide-y divide-gray-100 text-sm"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    // ====== Auth giả lập ======
+    const DEMO_EMAIL = 'dev@example.com';
+    const DEMO_PASS  = 'secret';
+    const AUTH_KEY   = 'auth';
+    const USER_KEY   = 'user_email';
+
+    const el = (id) => document.getElementById(id);
+    const $login = el('loginSection');
+    const $app   = el('appSection');
+    const $who   = el('whoami');
+    const $logout= el('btnLogout');
+
+    function isAuthed() { return localStorage.getItem(AUTH_KEY) === '1'; }
+    function setAuthed(email) {
+      localStorage.setItem(AUTH_KEY, '1');
+      localStorage.setItem(USER_KEY, email);
+    }
+    function clearAuth() {
+      localStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
+    function renderGate() {
+      if (isAuthed()) {
+        $login.classList.add('hidden');
+        $app.classList.remove('hidden');
+        $logout.classList.remove('hidden');
+        const email = localStorage.getItem(USER_KEY) || '';
+        $who.textContent = email ? `Signed in as ${email}` : '';
+        if (email) $who.classList.remove('hidden');
+      } else {
+        $app.classList.add('hidden');
+        $login.classList.remove('hidden');
+        $logout.classList.add('hidden');
+        $who.classList.add('hidden');
+      }
+    }
+
+    el('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = el('email').value.trim();
+      const pass  = el('password').value.trim();
+      const msg   = el('loginMsg');
+      if (email === DEMO_EMAIL && pass === DEMO_PASS) {
+        setAuthed(email);
+        msg.textContent = '';
+        renderGate();
+        // sau khi login, nếu data chưa load thì load
+        if (!window.__dataLoaded) initApp();
+      } else {
+        msg.textContent = 'Sai tài khoản hoặc mật khẩu';
+      }
+    });
+
+    $logout.addEventListener('click', () => {
+      clearAuth();
+      renderGate();
+    });
+
+    // ====== App: Dashboard + Products ======
+    const S = {
+      rows: el('rows'),
+      q: el('q'),
+      clear: el('clear'),
+      kpiProducts: el('kpiProducts'),
+      kpiStock: el('kpiStock'),
+      kpiValue: el('kpiValue'),
+      kpiTopCat: el('kpiTopCat'),
+      cartCount: el('cartCount')
+    };
+    let products = [], filtered = [], cart = 0;
+    const fmt = n => n.toLocaleString('en-US');
+
+    function computeKPIs(list) {
+      const totalProducts = list.length;
+      const totalStock = list.reduce((s, p) => s + p.stock, 0);
+      const totalValue = list.reduce((s, p) => s + p.price * p.stock, 0);
+      const byCat = list.reduce((m, p) => { m[p.category] = (m[p.category] || 0) + p.stock; return m; }, {});
+      let topCat = '—';
+      if (Object.keys(byCat).length) {
+        const entries = Object.entries(byCat).sort((a,b) => b[1]-a[1]);
+        topCat = `${entries[0][0]} (${entries[0][1]})`;
+      }
+      S.kpiProducts.textContent = totalProducts;
+      S.kpiStock.textContent = fmt(totalStock);
+      S.kpiValue.textContent = fmt(totalValue);
+      S.kpiTopCat.textContent = topCat;
+    }
+    function render(list) {
+      S.rows.innerHTML = list.map(p => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3">${p.id}</td>
+          <td class="px-4 py-3">${p.name}</td>
+          <td class="px-4 py-3">${p.category}</td>
+          <td class="px-4 py-3">${fmt(p.price)}</td>
+          <td class="px-4 py-3">${fmt(p.stock)}</td>
+          <td class="px-4 py-3">
+            <button data-id="${p.id}" class="add rounded-lg border border-gray-300 bg-white px-3 py-1 hover:bg-gray-100">
+              Add to cart
+            </button>
+          </td>
+        </tr>`).join('');
+      computeKPIs(list);
+    }
+    function applyFilter() {
+      const q = S.q?.value?.trim().toLowerCase() || '';
+      filtered = q ? products.filter(p => p.name.toLowerCase().includes(q)) : products.slice();
+      render(filtered);
+    }
+
+    function initApp() {
+      if (window.__dataLoaded) return;
+      window.__dataLoaded = true;
+
+      S.q?.addEventListener('input', applyFilter);
+      S.clear?.addEventListener('click', () => { S.q.value=''; applyFilter(); });
+      S.rows?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('add')) {
+          cart += 1; S.cartCount.textContent = cart;
+        }
+      });
+
+      fetch('./products.json')
+        .then(r => r.json())
+        .then(data => { products = data; filtered = data.slice(); render(filtered); })
+        .catch(console.error);
+    }
+
+    // boot
+    renderGate();
+    if (isAuthed()) initApp();
+  </script>
+</body>
+</html>

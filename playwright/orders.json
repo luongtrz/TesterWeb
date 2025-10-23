@@ -1,0 +1,7 @@
+[
+  { "id": 101, "customer": "Alpha Co",   "status": "Pending",  "amount": 1200 },
+  { "id": 102, "customer": "Bravo Ltd",  "status": "Shipped",  "amount": 300  },
+  { "id": 103, "customer": "Charlie Inc","status": "Pending",  "amount": 450  },
+  { "id": 104, "customer": "Delta LLC",  "status": "Canceled", "amount": 200  },
+  { "id": 105, "customer": "Alpha Co",   "status": "Pending",  "amount": 800  }
+]

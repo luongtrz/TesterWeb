@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Helpdesk Tickets (WebdriverIO)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900 p-6">
+  <header class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">Helpdesk</h1>
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-gray-600 hidden" id="whoami"></span>
+      <button id="btnLogout" class="hidden rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- LOGIN -->
+  <section id="loginSection" class="max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h2 class="text-xl font-semibold mb-3">Đăng nhập</h2>
+    <form id="loginForm" class="grid gap-3">
+      <label class="grid gap-1">
+        <span class="text-sm text-gray-600">Email</span>
+        <input data-testid="email" id="email" type="email"
+               class="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" required />
+      </label>
+      <label class="grid gap-1">
+        <span class="text-sm text-gray-600">Mật khẩu</span>
+        <input data-testid="password" id="password" type="password"
+               class="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" required />
+      </label>
+      <button data-testid="submit" class="rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Đăng nhập
+      </button>
+      <p id="loginMsg" class="text-sm text-red-600"></p>
+      <div class="text-xs text-gray-500">Demo: <code>dev@example.com</code> / <code>secret</code></div>
+    </form>
+  </section>
+
+  <!-- APP -->
+  <section id="appSection" class="hidden">
+    <h2 class="text-xl font-semibold mb-2">Dashboard</h2>
+
+    <!-- KPIs -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-4">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Total Tickets</h4>
+        <div id="kpiTotal" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Open</h4>
+        <div id="kpiOpen" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">In Progress</h4>
+        <div id="kpiProgress" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Top Priority</h4>
+        <div id="kpiTopPrio" class="text-2xl font-semibold">—</div>
+      </div>
+    </section>
+
+    <!-- Toolbar -->
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <select id="status" class="rounded-lg border border-gray-300 bg-white px-3 py-2">
+        <option value="ALL">All</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+      <input id="q" type="search" placeholder="Tìm theo tiêu đề/khách hàng..."
+             class="w-72 rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
+      <button id="clear" class="rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">Xóa lọc</button>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <table class="min-w-full">
+        <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+          <tr>
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">Subject</th>
+            <th class="px-4 py-3">Customer</th>
+            <th class="px-4 py-3">Priority</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody id="rows" class="divide-y divide-gray-100 text-sm"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    // ===== Auth mock =====
+    const DEMO_EMAIL='dev@example.com', DEMO_PASS='secret';
+    const AUTH='auth', USER='user_email';
+    const $ = id => document.getElementById(id);
+    const $login=$('loginSection'), $app=$('appSection'), $who=$('whoami'), $logout=$('btnLogout');
+
+    function authed(){ return localStorage.getItem(AUTH)==='1'; }
+    function setAuth(email){ localStorage.setItem(AUTH,'1'); localStorage.setItem(USER,email); }
+    function clearAuth(){ localStorage.removeItem(AUTH); localStorage.removeItem(USER); }
+    function gate(){
+      if(authed()){ $login.classList.add('hidden'); $app.classList.remove('hidden'); $logout.classList.remove('hidden');
+        const u=localStorage.getItem(USER)||''; if(u){ $who.textContent=`Signed in as ${u}`; $who.classList.remove('hidden'); }
+      } else { $app.classList.add('hidden'); $login.classList.remove('hidden'); $logout.classList.add('hidden'); $who.classList.add('hidden'); }
+    }
+    $('loginForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const email=$('email').value.trim(), pass=$('password').value.trim(), msg=$('loginMsg');
+      if(email===DEMO_EMAIL && pass===DEMO_PASS){ setAuth(email); msg.textContent=''; gate(); if(!window.__booted) boot(); }
+      else msg.textContent='Sai tài khoản hoặc mật khẩu';
+    });
+    $logout.addEventListener('click', ()=>{ clearAuth(); gate(); });
+
+    // ===== Tickets app =====
+    const S={rows:$('rows'), q:$('q'), clear:$('clear'), status:$('status'),
+             kpiTotal:$('kpiTotal'), kpiOpen:$('kpiOpen'), kpiProgress:$('kpiProgress'), kpiTopPrio:$('kpiTopPrio')};
+    let tickets=[], view=[];
+    function kpis(listAll){
+      const total=listAll.length;
+      const open=listAll.filter(t=>t.status==='Open').length;
+      const prog=listAll.filter(t=>t.status==='In Progress').length;
+      const byPrio=listAll.reduce((m,t)=>{ m[t.priority]=(m[t.priority]||0)+1; return m; },{});
+      let top='—'; if(Object.keys(byPrio).length){ const e=Object.entries(byPrio).sort((a,b)=>b[1]-a[1])[0]; top=`${e[0]} (${e[1]})`; }
+      S.kpiTotal.textContent=String(total);
+      S.kpiOpen.textContent=String(open);
+      S.kpiProgress.textContent=String(prog);
+      S.kpiTopPrio.textContent=top;
+    }
+    function render(list){
+      S.rows.innerHTML=list.map(t=>`
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3">${t.id}</td>
+          <td class="px-4 py-3">${t.subject}</td>
+          <td class="px-4 py-3">${t.customer}</td>
+          <td class="px-4 py-3">${t.priority}</td>
+          <td class="px-4 py-3 status">${t.status}</td>
+          <td class="px-4 py-3">
+            ${t.status!=='Resolved'
+              ? `<button data-testid="resolve" data-id="${t.id}" class="rounded-lg border border-gray-300 bg-white px-3 py-1 hover:bg-gray-100">Resolve</button>`
+              : ''}
+          </td>
+        </tr>`).join('');
+      kpis(tickets); // kpi theo toàn bộ danh sách
+    }
+    function applyFilter(){
+      const q=S.q.value.trim().toLowerCase(), st=S.status.value;
+      view = tickets.filter(t => (st==='ALL'||t.status===st) &&
+                                 (!q || t.subject.toLowerCase().includes(q) || t.customer.toLowerCase().includes(q)));
+      render(view);
+    }
+    function boot(){
+      if(window.__booted) return; window.__booted=true;
+      S.q.addEventListener('input', applyFilter);
+      S.status.addEventListener('change', applyFilter);
+      S.clear.addEventListener('click', ()=>{ S.q.value=''; S.status.value='ALL'; applyFilter(); });
+      S.rows.addEventListener('click', e=>{
+        if(e.target.dataset.testid==='resolve'){
+          const id=Number(e.target.getAttribute('data-id'));
+          const t=tickets.find(x=>x.id===id);
+          if(t && t.status!=='Resolved'){ t.status='Resolved'; applyFilter(); }
+        }
+      });
+      fetch('./tickets.json').then(r=>r.json()).then(data=>{ tickets=data; view=data.slice(); render(view); }).catch(console.error);
+    }
+    gate(); if(authed()) boot();
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[
+  { "id": 1, "name": "Laptop Pro", "category": "Electronics", "price": 1000, "stock": 5 },
+  { "id": 2, "name": "Mouse", "category": "Electronics", "price": 25, "stock": 100 },
+  { "id": 3, "name": "Chair", "category": "Furniture", "price": 150, "stock": 20 },
+  { "id": 4, "name": "Desk",  "category": "Furniture", "price": 300, "stock": 10 }
+]

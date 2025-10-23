@@ -1,0 +1,7 @@
+[
+  { "id": 201, "subject": "Printer not working", "customer": "Alpha Co",   "priority": "High",   "status": "Open" },
+  { "id": 202, "subject": "Email setup",        "customer": "Bravo Ltd",  "priority": "Low",    "status": "Resolved" },
+  { "id": 203, "subject": "VPN issue",          "customer": "Charlie Inc","priority": "Medium", "status": "In Progress" },
+  { "id": 204, "subject": "License renewal",    "customer": "Delta LLC",  "priority": "High",   "status": "Open" },
+  { "id": 205, "subject": "Password reset",     "customer": "Alpha Co",   "priority": "Low",    "status": "Open" }
+]

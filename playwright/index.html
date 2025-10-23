@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Orders Dashboard (Playwright)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900 p-6">
+
+  <header class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">Orders App</h1>
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-gray-600 hidden" id="whoami"></span>
+      <button id="btnLogout" class="hidden rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- LOGIN -->
+  <section id="loginSection" class="max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h2 class="text-xl font-semibold mb-3">Đăng nhập</h2>
+    <form id="loginForm" class="grid gap-3">
+      <label class="grid gap-1">
+        <span class="text-sm text-gray-600">Email</span>
+        <input data-testid="email" id="email" name="email" type="email"
+               class="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" required />
+      </label>
+      <label class="grid gap-1">
+        <span class="text-sm text-gray-600">Mật khẩu</span>
+        <input data-testid="password" id="password" name="password" type="password"
+               class="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" required />
+      </label>
+      <button data-testid="submit" class="rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Đăng nhập
+      </button>
+      <p id="loginMsg" class="text-sm text-red-600"></p>
+      <div class="text-xs text-gray-500">Demo: <code>dev@example.com</code> / <code>secret</code></div>
+    </form>
+  </section>
+
+  <!-- APP -->
+  <section id="appSection" class="hidden">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-xl font-semibold">Dashboard</h2>
+    </div>
+
+    <!-- KPIs -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-4">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Total Orders</h4>
+        <div id="kpiOrders" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Pending</h4>
+        <div id="kpiPending" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Revenue (₫)</h4>
+        <div id="kpiRevenue" class="text-2xl font-semibold">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Top Customer</h4>
+        <div id="kpiTopCustomer" class="text-2xl font-semibold">—</div>
+      </div>
+    </section>
+
+    <!-- Toolbar -->
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <select id="status" class="rounded-lg border border-gray-300 bg-white px-3 py-2">
+        <option value="ALL">All</option>
+        <option value="Pending">Pending</option>
+        <option value="Shipped">Shipped</option>
+        <option value="Canceled">Canceled</option>
+      </select>
+      <input id="q" type="search" placeholder="Tìm khách hàng... (vd: alpha)"
+             class="w-64 rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
+      <button id="clear" class="rounded-lg border border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
+        Xóa lọc
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <table class="min-w-full">
+        <thead class="bg-gray-50 text-left text-sm font-semibold text-gray-600">
+          <tr>
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">Customer</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Amount</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody id="rows" class="divide-y divide-gray-100 text-sm"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    // ====== Auth giả lập ======
+    const DEMO_EMAIL = 'dev@example.com';
+    const DEMO_PASS  = 'secret';
+    const AUTH_KEY   = 'auth';
+    const USER_KEY   = 'user_email';
+    const $ = (id) => document.getElementById(id);
+    const $login = $('loginSection'), $app = $('appSection'), $who = $('whoami'), $logout = $('btnLogout');
+
+    function isAuthed(){ return localStorage.getItem(AUTH_KEY)==='1'; }
+    function setAuthed(email){ localStorage.setItem(AUTH_KEY,'1'); localStorage.setItem(USER_KEY,email); }
+    function clearAuth(){ localStorage.removeItem(AUTH_KEY); localStorage.removeItem(USER_KEY); }
+    function renderGate(){
+      if(isAuthed()){
+        $login.classList.add('hidden'); $app.classList.remove('hidden'); $logout.classList.remove('hidden');
+        const email = localStorage.getItem(USER_KEY)||''; if(email){ $who.textContent=`Signed in as ${email}`; $who.classList.remove('hidden'); }
+      } else {
+        $app.classList.add('hidden'); $login.classList.remove('hidden'); $logout.classList.add('hidden'); $who.classList.add('hidden');
+      }
+    }
+    $('loginForm').addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const email=$('email').value.trim(), pass=$('password').value.trim(), msg=$('loginMsg');
+      if(email===DEMO_EMAIL && pass===DEMO_PASS){ setAuthed(email); msg.textContent=''; renderGate(); if(!window.__init) initApp(); }
+      else msg.textContent='Sai tài khoản hoặc mật khẩu';
+    });
+    $logout.addEventListener('click', ()=>{ clearAuth(); renderGate(); });
+
+    // ====== Orders App ======
+    const S = { rows: $('rows'), q: $('q'), clear: $('clear'), status: $('status'),
+                kpiOrders: $('kpiOrders'), kpiPending: $('kpiPending'),
+                kpiRevenue: $('kpiRevenue'), kpiTopCustomer: $('kpiTopCustomer') };
+    let orders=[], view=[];
+    const fmt = n => n.toLocaleString('en-US');
+
+    function computeKPIs(list){
+      const total = list.length;
+      const pending = list.filter(o=>o.status==='Pending').length;
+      // Revenue tính tổng amount trừ Canceled
+      const revenue = list.filter(o=>o.status!=='Canceled').reduce((s,o)=>s+o.amount,0);
+      const byCustomer = list.filter(o=>o.status!=='Canceled').reduce((m,o)=>{ m[o.customer]=(m[o.customer]||0)+o.amount; return m; },{});
+      let top = '—';
+      if(Object.keys(byCustomer).length){
+        const e = Object.entries(byCustomer).sort((a,b)=>b[1]-a[1])[0];
+        top = `${e[0]} (${fmt(e[1])})`;
+      }
+      S.kpiOrders.textContent = total;
+      S.kpiPending.textContent = String(pending);
+      S.kpiRevenue.textContent = fmt(revenue);
+      S.kpiTopCustomer.textContent = top;
+    }
+
+    function render(list){
+      S.rows.innerHTML = list.map(o => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3">${o.id}</td>
+          <td class="px-4 py-3">${o.customer}</td>
+          <td class="px-4 py-3 status">${o.status}</td>
+          <td class="px-4 py-3">${fmt(o.amount)}</td>
+          <td class="px-4 py-3">
+            ${o.status==='Pending'
+              ? `<button data-id="${o.id}" class="fulfill rounded-lg border border-gray-300 bg-white px-3 py-1 hover:bg-gray-100">Fulfill</button>`
+              : ''}
+          </td>
+        </tr>
+      `).join('');
+      computeKPIs(orders); // KPIs theo toàn bộ đơn (có thể đổi thành theo view nếu thích)
+    }
+
+    function applyFilter(){
+      const q = S.q.value.trim().toLowerCase();
+      const st = S.status.value;
+      view = orders.filter(o => (st==='ALL' || o.status===st) &&
+                                (!q || o.customer.toLowerCase().includes(q)));
+      render(view);
+    }
+
+    function initApp(){
+      if(window.__init) return; window.__init = true;
+
+      S.q.addEventListener('input', applyFilter);
+      S.status.addEventListener('change', applyFilter);
+      S.clear.addEventListener('click', ()=>{ S.q.value=''; S.status.value='ALL'; applyFilter(); });
+      S.rows.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('fulfill')){
+          const id = Number(e.target.getAttribute('data-id'));
+          const o = orders.find(x=>x.id===id);
+          if(o && o.status==='Pending'){ o.status='Shipped'; applyFilter(); }
+        }
+      });
+
+      fetch('./orders.json')
+        .then(r=>r.json())
+        .then(data => { orders = data; view=data.slice(); render(view); })
+        .catch(console.error);
+    }
+
+    renderGate(); if(isAuthed()) initApp();
+  </script>
+</body>
+</html>
